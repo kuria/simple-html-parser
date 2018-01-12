@@ -1,0 +1,17 @@
+{
+    "name": "kuria/simple-html-parser",
+    "description": "Minimalistic HTML parser",
+    "keywords": ["html", "parser", "encoding", "tag", "comment", "dtd", "charset"],
+    "license": "MIT",
+    "require": {
+        "php": ">=7.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^6.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Kuria\\SimpleHtmlParser\\": "src"
+        }
+    }
+}
