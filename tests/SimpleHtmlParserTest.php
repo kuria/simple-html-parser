@@ -143,7 +143,7 @@ class SimpleHtmlParserTest extends TestCase
             'end' => 15,
             'symbol' => '!',
         ]);
-        
+
         $this->matchAndAssert('<?= echo "Hi"; ?>', [
             'type' => SimpleHtmlParser::OTHER,
             'start' => 0,
@@ -158,7 +158,7 @@ class SimpleHtmlParserTest extends TestCase
         $this->matchAndAssertFailure('< foo');
         $this->matchAndAssertFailure('<+bar');
         $this->matchAndAssertFailure('<#');
-        
+
         $this->matchAndAssert('<?', [
             'type' => SimpleHtmlParser::INVALID,
             'start' => 0,
@@ -298,7 +298,6 @@ HTML;
         $this->assertSame('', $parser->getSlice(1, -1));
         $this->assertSame('<!-- foo -->', $parser->getSlice(12, 0));
         $this->assertSame('', $parser->getSlice(100, 200));
-
     }
 
     function testExceptionFromFindOnTagNameSpecifiedForNonTagType()
@@ -351,7 +350,13 @@ HTML;
             ['type' => SimpleHtmlParser::CLOSING_TAG, 'start' => 51, 'end' => 59, 'name' => 'title'],
             ['type' => SimpleHtmlParser::OPENING_TAG, 'start' => 60, 'end' => 91, 'name' => 'script', 'attrs' => ['type' => 'text/javascript']],
             ['type' => SimpleHtmlParser::CLOSING_TAG, 'start' => 177, 'end' => 186, 'name' => 'script'],
-            ['type' => SimpleHtmlParser::OPENING_TAG, 'start' => 187, 'end' => 217, 'name' => 'p', 'attrs' => ['<!--' => true, 'invalid' => true, 'on' =>  true, 'purpose' => true, '--' => true]],
+            ['type' => SimpleHtmlParser::OPENING_TAG, 'start' => 187, 'end' => 217, 'name' => 'p', 'attrs' => [
+                '<!--' => true,
+                'invalid' => true,
+                'on' =>  true,
+                'purpose' => true,
+                '--' => true,
+            ]],
             ['type' => SimpleHtmlParser::OPENING_TAG, 'start' => 222, 'end' => 251, 'name' => 'a', 'attrs' => ['href' => 'http://example.com']],
             ['type' => SimpleHtmlParser::CLOSING_TAG, 'start' => 261, 'end' => 265, 'name' => 'a'],
             ['type' => SimpleHtmlParser::CLOSING_TAG, 'start' => 266, 'end' => 270, 'name' => 'p'],
@@ -432,21 +437,21 @@ HTML;
 
         $parser->pushState();
         $this->assertSame(3, $parser->countStates());
-        
+
         $parser->next();
-        
+
         // </title>
         $this->assertSame(42, $parser->getOffset());
         $this->assertElement($parser->current(), [
             'type' => SimpleHtmlParser::CLOSING_TAG,
             'name' => 'title',
         ]);
-        
+
         $parser->pushState();
         $this->assertSame(4, $parser->countStates());
-        
+
         $parser->find(SimpleHtmlParser::CLOSING_TAG, 'h1');
-        
+
         // </h1>
         $this->assertSame(66, $parser->getOffset());
 
@@ -720,7 +725,7 @@ HTML;
 
         switch ($element['type']) {
             case SimpleHtmlParser::COMMENT:
-            case SimpleHtmlParser::INVALID;
+            case SimpleHtmlParser::INVALID:
                 // no extra attributes
                 break;
             case SimpleHtmlParser::OPENING_TAG:

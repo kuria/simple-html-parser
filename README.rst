@@ -3,6 +3,9 @@ Simple HTML parser
 
 Minimalistic HTML parser.
 
+.. image:: https://travis-ci.org/kuria/simple-html-parser.svg?branch=master
+   :target: https://travis-ci.org/kuria/simple-html-parser
+
 .. NOTE::
 
    If you need advanced DOM manipulation, consider using ``kuria/dom`` instead.

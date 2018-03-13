@@ -16,7 +16,7 @@ class SimpleHtmlParser implements \Iterator
     const OTHER = 3;
     const INVALID = 4;
 
-    /** http://www.w3.org/TR/html5/syntax.html#parsing-html-fragments */
+    /** @see http://www.w3.org/TR/html5/syntax.html#parsing-html-fragments */
     protected const RAWTEXT_TAG_MAP = [
         'style' => 0,
         'script' => 1,
@@ -38,29 +38,25 @@ class SimpleHtmlParser implements \Iterator
     ];
 
     /** @var string */
-    protected $html;
+    private $html;
     /** @var int */
-    protected $length;
+    private $length;
     /** @var bool iteration state */
-    protected $valid = true;
+    private $valid = true;
     /** @var int */
-    protected $offset = 0;
+    private $offset = 0;
     /** @var int|null */
-    protected $index;
+    private $index;
     /** @var array|null */
-    protected $current;
+    private $current;
     /** @var array[] */
-    protected $stateStack = [];
-    /** @var string|null */
-    protected $encoding;
-    /** @var bool|null */
-    protected $usesFallbackEncoding;
-    /** @var string */
-    protected $fallbackEncoding = 'utf-8';
+    private $stateStack = [];
     /** @var array|null */
-    protected $encodingTag;
-    /** @var array|bool|null */
-    protected $doctypeElement;
+    private $encodingInfo;
+    /** @var string */
+    private $fallbackEncoding = 'utf-8';
+    /** @var array|false|null */
+    private $doctypeElement;
 
     function __construct(string $html)
     {
@@ -128,11 +124,7 @@ class SimpleHtmlParser implements \Iterator
      */
     function getEncoding(): string
     {
-        if ($this->encoding === null) {
-            $this->detectEncoding();
-        }
-
-        return $this->encoding;
+        return $this->getEncodingInfo()['encoding'];
     }
 
     /**
@@ -142,11 +134,7 @@ class SimpleHtmlParser implements \Iterator
      */
     function getEncodingTag(): ?array
     {
-        if ($this->encoding === null) {
-            $this->detectEncoding();
-        }
-
-        return $this->encodingTag;
+        return $this->getEncodingInfo()['tag'];
     }
 
     /**
@@ -154,11 +142,7 @@ class SimpleHtmlParser implements \Iterator
      */
     function usesFallbackEncoding(): bool
     {
-        if ($this->usesFallbackEncoding === null) {
-            $this->detectEncoding();
-        }
-
-        return $this->usesFallbackEncoding;
+        return $this->getEncodingInfo()['is_fallback'];
     }
 
     /**
@@ -194,7 +178,7 @@ class SimpleHtmlParser implements \Iterator
 
         return $this->doctypeElement ?: null;
     }
-    
+
     /**
      * Escape a string
      *
@@ -202,11 +186,7 @@ class SimpleHtmlParser implements \Iterator
      */
     function escape(string $string, int $mode = ENT_QUOTES, bool $doubleEncode = true): string
     {
-        if ($this->encoding === null) {
-            $this->detectEncoding();
-        }
-        
-        return htmlspecialchars($string, $mode, $this->encoding, $doubleEncode);
+        return htmlspecialchars($string, $mode, $this->getEncodingInfo()['encoding'], $doubleEncode);
     }
 
     /**
@@ -215,7 +195,7 @@ class SimpleHtmlParser implements \Iterator
      * - $tagName should be lowercase.
      * - stops searching after $stopOffset is reached, if specified (soft limit).
      */
-    function find(int $elemType, ?string $tagName = null, int $stopOffset = null): ?array
+    function find(int $elemType, ?string $tagName = null, ?int $stopOffset = null): ?array
     {
         if ($tagName !== null && static::OPENING_TAG !== $elemType && static::CLOSING_TAG !== $elemType) {
             throw new \LogicException('Can only specify tag name when searching for OPENING_TAG or CLOSING_TAG');
@@ -370,13 +350,13 @@ class SimpleHtmlParser implements \Iterator
     /**
      * Match HTML element at the current offset
      */
-    protected function match(int $offset): ?array
+    private function match(int $offset): ?array
     {
         $result = null;
 
         if (
             $offset < $this->length
-            && preg_match('{<!--|<(/?)([\w-:\x80-\xFF]+)|<[!?/]}', $this->html, $match, PREG_OFFSET_CAPTURE, $offset)
+            && preg_match('{<!--|<(/?)([\w\-:\x80-\xFF]+)|<[!?/]}', $this->html, $match, PREG_OFFSET_CAPTURE, $offset)
         ) {
             if ($match[0][0] === '<!--') {
                 // comment
@@ -435,7 +415,7 @@ class SimpleHtmlParser implements \Iterator
      *
      * Returns [attributes, offset] tuple.
      */
-    protected function matchAttributes(int $offset): array
+    private function matchAttributes(int $offset): array
     {
         $attrs = [];
 
@@ -473,7 +453,7 @@ class SimpleHtmlParser implements \Iterator
         return [$attrs, $offset];
     }
 
-    protected function normalizeIdentifier(string $name): string
+    private function normalizeIdentifier(string $name): string
     {
         // lowercase only if the name consists of ASCII characters
         if (preg_match('{^[^\x80-\xFF]+$}', $name)) {
@@ -486,13 +466,12 @@ class SimpleHtmlParser implements \Iterator
     /**
      * Try to find the doctype in the first 1024 bytes of the document
      */
-    protected function findDoctype(): ?array
+    private function findDoctype(): ?array
     {
         $found = false;
         $this->pushState();
 
         try {
-
             $this->rewind();
 
             while ($element = $this->find(static::OTHER, null, 1024)) {
@@ -516,8 +495,12 @@ class SimpleHtmlParser implements \Iterator
     /**
      * Try to determine the encoding from the first 1024 bytes of the document
      */
-    protected function detectEncoding(): void
+    private function getEncodingInfo(): array
     {
+        if ($this->encodingInfo !== null) {
+            return $this->encodingInfo;
+        }
+
         // http://www.w3.org/TR/html5/syntax.html#determining-the-character-encoding
         // http://www.w3.org/TR/html5/document-metadata.html#charset
 
@@ -557,7 +540,7 @@ class SimpleHtmlParser implements \Iterator
                 $encoding = $metaTag['attrs']['charset'];
             }
         }
-        
+
         if ($encoding !== null) {
             $encoding = strtolower($encoding);
         }
@@ -568,9 +551,11 @@ class SimpleHtmlParser implements \Iterator
             $isFallback = true;
         }
 
-        $this->encoding = $encoding;
-        $this->encodingTag = $found ? $metaTag : null;
-        $this->usesFallbackEncoding = $isFallback;
+        return $this->encodingInfo = [
+            'encoding' => $encoding,
+            'tag' => $found ? $metaTag : null,
+            'is_fallback' => $isFallback,
+        ];
     }
 
     /**
