@@ -265,7 +265,7 @@ class SimpleHtmlParser implements \Iterator
      */
     function countStates(): int
     {
-        return sizeof($this->stateStack);
+        return count($this->stateStack);
     }
 
     /**
