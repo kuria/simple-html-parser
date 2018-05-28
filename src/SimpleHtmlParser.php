@@ -456,7 +456,7 @@ class SimpleHtmlParser implements \Iterator
     private function normalizeIdentifier(string $name): string
     {
         // lowercase only if the name consists of ASCII characters
-        if (preg_match('{^[^\x80-\xFF]+$}', $name)) {
+        if (preg_match('{[^\x80-\xFF]+$}AD', $name)) {
             return strtolower($name);
         }
 
