@@ -39,22 +39,31 @@ class SimpleHtmlParser implements \Iterator
 
     /** @var string */
     private $html;
+
     /** @var int */
     private $length;
+
     /** @var bool iteration state */
     private $valid = true;
+
     /** @var int */
     private $offset = 0;
+
     /** @var int|null */
     private $index;
+
     /** @var array|null */
     private $current;
+
     /** @var array[] */
     private $stateStack = [];
+
     /** @var array|null */
     private $encodingInfo;
+
     /** @var string */
     private $fallbackEncoding = 'utf-8';
+
     /** @var array|false|null */
     private $doctypeElement;
 
