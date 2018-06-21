@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 
 class SimpleHtmlParserTest extends TestCase
 {
-    function testBasicGetters()
+    function testShouldGetLengthAndHtml()
     {
         $parser = new SimpleHtmlParser('abc');
 
@@ -15,7 +15,7 @@ class SimpleHtmlParserTest extends TestCase
         $this->assertSame('abc', $parser->getHtml());
     }
 
-    function testMatchComment()
+    function testShouldMatchComment()
     {
         $this->matchAndAssert('<!-- foo bar -->', [
             'type' => SimpleHtmlParser::COMMENT,
@@ -24,7 +24,7 @@ class SimpleHtmlParserTest extends TestCase
         ]);
     }
 
-    function testMatchOpeningTag()
+    function testShouldMatchOpeningTag()
     {
         $this->matchAndAssert('<P>', [
             'type' => SimpleHtmlParser::OPENING_TAG,
@@ -35,7 +35,7 @@ class SimpleHtmlParserTest extends TestCase
         ]);
     }
 
-    function testMatchOpeningTagWithSpecialCharacters()
+    function testShouldMatchOpeningTagWithSpecialCharacters()
     {
         $html = '<Foo:barž>';
 
@@ -48,7 +48,7 @@ class SimpleHtmlParserTest extends TestCase
         ]);
     }
 
-    function testMatchOpeningTagWithAttributes()
+    function testShouldMatchOpeningTagWithAttributes()
     {
         $this->matchAndAssert('<A HREF="http://example.com?FOO" id="foo"  class=link >', [
             'type' => SimpleHtmlParser::OPENING_TAG,
@@ -59,7 +59,7 @@ class SimpleHtmlParserTest extends TestCase
         ]);
     }
 
-    function testMatchSelfClosingTag()
+    function testShouldMatchSelfClosingTag()
     {
         $this->matchAndAssert('<hr />', [
             'type' => SimpleHtmlParser::OPENING_TAG,
@@ -70,7 +70,7 @@ class SimpleHtmlParserTest extends TestCase
         ]);
     }
 
-    function testMatchSelfClosingTagWithAttributes()
+    function testShouldMatchSelfClosingTagWithAttributes()
     {
         $this->matchAndAssert('<hr data-lorem="ipsum" />', [
             'type' => SimpleHtmlParser::OPENING_TAG,
@@ -81,7 +81,7 @@ class SimpleHtmlParserTest extends TestCase
         ]);
     }
 
-    function testMatchUnterminatedOpeningTag()
+    function testShouldMatchUnterminatedOpeningTag()
     {
         $this->matchAndAssert('<a href="http://example.com/"', [
             'type' => SimpleHtmlParser::OPENING_TAG,
@@ -92,7 +92,7 @@ class SimpleHtmlParserTest extends TestCase
         ]);
     }
 
-    function testMatchUnterminatedOpeningTagFollowedByAnotherElement()
+    function testShouldMatchUnterminatedOpeningTagFollowedByAnotherElement()
     {
         $this->matchAndAssert('<a href="http://example.com/"<br id="foo">', [
             'type' => SimpleHtmlParser::OPENING_TAG,
@@ -103,7 +103,7 @@ class SimpleHtmlParserTest extends TestCase
         ]);
     }
 
-    function testMatchClosingTag()
+    function testShouldMatchClosingTag()
     {
         $this->matchAndAssert('</A>', [
             'type' => SimpleHtmlParser::CLOSING_TAG,
@@ -113,7 +113,7 @@ class SimpleHtmlParserTest extends TestCase
         ]);
     }
 
-    function testMatchClosingTagWithSpecialCharacters()
+    function testShouldMatchClosingTagWithSpecialCharacters()
     {
         $html = '</Foo-barž>';
 
@@ -125,7 +125,7 @@ class SimpleHtmlParserTest extends TestCase
         ]);
     }
 
-    function testMatchClosingTagWithAttributes()
+    function testShouldMatchClosingTagWithAttributes()
     {
         $this->matchAndAssert('</A id="nonsense">', [
             'type' => SimpleHtmlParser::CLOSING_TAG,
@@ -135,7 +135,7 @@ class SimpleHtmlParserTest extends TestCase
         ]);
     }
 
-    function testMatchOther()
+    function testShouldMatchOther()
     {
         $this->matchAndAssert('<!doctype html>', [
             'type' => SimpleHtmlParser::OTHER,
@@ -152,7 +152,7 @@ class SimpleHtmlParserTest extends TestCase
         ]);
     }
 
-    function testMatchInvalid()
+    function testShouldMatchInvalid()
     {
         $this->matchAndAssertFailure('<');
         $this->matchAndAssertFailure('< foo');
@@ -172,7 +172,7 @@ class SimpleHtmlParserTest extends TestCase
         ]);
     }
 
-    function testFind()
+    function testShouldFind()
     {
         $html = <<<HTML
 <!doctype html>
@@ -202,7 +202,7 @@ HTML;
         ]);
     }
 
-    function testFindNonTags()
+    function testShouldFindNonTags()
     {
         $html = <<<HTML
 <!doctype html>
@@ -226,7 +226,7 @@ HTML;
         ]);
     }
 
-    function testFindStopOffsetMidElement()
+    function testShouldNotFindElementIfStopOffsetIsInsideAnotherElement()
     {
         $html = <<<HTML
 <!-- foo bar -->
@@ -238,7 +238,7 @@ HTML;
         $this->assertNull($parser->find(SimpleHtmlParser::OPENING_TAG, 'br', 10));
     }
 
-    function testFindStopOffsetRightAfterElement()
+    function testShouldNotFindElementIfStopOffsetIsExactlyAfterAnotherElement()
     {
         $html = <<<HTML
 <!-- foo bar -->
@@ -250,7 +250,7 @@ HTML;
         $this->assertNull($parser->find(SimpleHtmlParser::OPENING_TAG, 'br', 16));
     }
 
-    function testFindStopOffsetRightBetweenElements()
+    function testShouldFindElementIfStopOffsetIsBetweenElements()
     {
         $html = <<<HTML
 <!-- foo bar -->
@@ -267,7 +267,7 @@ HTML;
         ]);
     }
 
-    function testGetHtmlWithElement()
+    function testShouldGetHtmlOfElement()
     {
         $html = <<<HTML
 <!-- test link -->
@@ -283,7 +283,7 @@ HTML;
         $this->assertSame('<a href="http://example.com/">', $parser->getHtml($element));
     }
 
-    function testGetSlice()
+    function testShouldGetSlice()
     {
         $html = <<<HTML
 <!-- foo -->
@@ -300,7 +300,7 @@ HTML;
         $this->assertSame('', $parser->getSlice(100, 200));
     }
 
-    function testExceptionFromFindOnTagNameSpecifiedForNonTagType()
+    function testFindShouldThrowExceptionIfTagNameIsSpecifiedForNonTagType()
     {
         $parser = new SimpleHtmlParser('');
 
@@ -310,7 +310,7 @@ HTML;
         $parser->find(SimpleHtmlParser::COMMENT, 'foo');
     }
 
-    function testGetSliceBetween()
+    function testShouldGetSliceBetween()
     {
         $html = <<<HTML
 <!-- foo -->
@@ -326,7 +326,7 @@ HTML;
         $this->assertSame('hello', $parser->getSliceBetween($spanClose, $spanOpen));
     }
 
-    function testIterator()
+    function testShouldIterate()
     {
         $html = <<<HTML
 <!doctype html>
@@ -383,7 +383,7 @@ HTML;
         $this->assertNull($parser->current());
     }
 
-    function testEmptyIterator()
+    function testShouldIterateEmpty()
     {
         $parser = new SimpleHtmlParser('No tags here, sorry.. :)');
 
@@ -397,7 +397,7 @@ HTML;
         }
     }
 
-    function testStates()
+    function testShouldManageStates()
     {
         $html = <<<HTML
 <!doctype html>
@@ -486,7 +486,7 @@ HTML;
         $this->assertSame(0, $parser->getOffset());
     }
 
-    function testClearStates()
+    function testShouldClearStates()
     {
         $parser = new SimpleHtmlParser('');
 
@@ -502,7 +502,7 @@ HTML;
         $this->assertSame(0, $parser->countStates());
     }
 
-    function testExceptionOnPopStateWithEmptyStack()
+    function testPopStateShouldThrowExceptionIfThereAreNoStates()
     {
         $parser = new SimpleHtmlParser('');
 
@@ -514,7 +514,7 @@ HTML;
         $parser->popState();
     }
 
-    function testExceptionOnRevertStateWithEmptyStack()
+    function testRevertStateShouldThrowExceptionIfThereAreNoStates()
     {
         $parser = new SimpleHtmlParser('');
 
@@ -526,7 +526,7 @@ HTML;
         $parser->revertState();
     }
 
-    function testEscape()
+    function testShouldEscape()
     {
         $parser = new SimpleHtmlParser('');
 
@@ -536,7 +536,7 @@ HTML;
         );
     }
 
-    function testGetDoctype()
+    function testShouldGetDoctype()
     {
         $html = <<<HTML
 <!-- foo bar -->
@@ -553,7 +553,7 @@ HTML;
         ]);
     }
 
-    function testGetDoctypeNotFound()
+    function testShouldReturnNullIfThereIsNoDoctype()
     {
         $html = <<<HTML
 <!-- foo bar -->
@@ -565,7 +565,7 @@ HTML;
         $this->assertNull($parser->getDoctypeElement());
     }
 
-    function testEncodingDefaultFallback()
+    function testShouldUseDefaultFallbackEncoding()
     {
         $html = <<<HTML
 <!doctype html>
@@ -579,7 +579,7 @@ HTML;
         $this->assertTrue($parser->usesFallbackEncoding());
     }
 
-    function testEncodingSpecifiedFallback()
+    function testShouldUseCustomFallbackEncoding()
     {
         $html = <<<HTML
 <!doctype html>
@@ -595,7 +595,7 @@ HTML;
         $this->assertTrue($parser->usesFallbackEncoding());
     }
 
-    function testExceptionOnUnsupportedFallbackEncoding()
+    function testShouldThrowExceptionOnUnsupportedFallbackEncoding()
     {
         $parser = new SimpleHtmlParser('');
 
@@ -605,7 +605,7 @@ HTML;
         $parser->setFallbackEncoding('unknown');
     }
 
-    function testEncodingMetaCharset()
+    function testShouldDetectEncodingFromMetaCharset()
     {
         $html = <<<HTML
 <!doctype html>
@@ -626,7 +626,7 @@ HTML;
         $this->assertFalse($parser->usesFallbackEncoding());
     }
 
-    function testEncodingMetaHttpEquiv()
+    function testShouldDetectEncodingFromMetaHttpEquiv()
     {
         $html = <<<HTML
 <!doctype html>
@@ -647,7 +647,7 @@ HTML;
         $this->assertFalse($parser->usesFallbackEncoding());
     }
 
-    function testEncodingDetectionDoesNotAlterState()
+    function testShouldNotAlterStateWhenDetectingEncoding()
     {
         $html = <<<HTML
 <!doctype html>
@@ -669,7 +669,7 @@ HTML;
         $this->assertSame(0, $parser->countStates());
     }
 
-    function testGetEncodingTagShouldDetectEncoding()
+    function testShouldDetectEncodingWhenGettingEncodingTag()
     {
         $html = <<<HTML
 <!doctype html>
@@ -688,7 +688,7 @@ HTML;
         ]);
     }
 
-    function testUsesFallbackEncodingShouldDetectEncoding()
+    function testShouldNotUseFallbackEncodingIfEncodingIsSpecified()
     {
         $html = <<<HTML
 <!doctype html>
