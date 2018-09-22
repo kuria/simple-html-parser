@@ -3,8 +3,8 @@ Simple HTML parser
 
 Minimalistic HTML parser.
 
-.. image:: https://travis-ci.org/kuria/simple-html-parser.svg?branch=master
-   :target: https://travis-ci.org/kuria/simple-html-parser
+.. image:: https://travis-ci.com/kuria/simple-html-parser.svg?branch=master
+   :target: https://travis-ci.com/kuria/simple-html-parser
 
 .. NOTE::
 
@@ -71,8 +71,29 @@ iterator methods.
    }
 
 
+Element array structure
+=======================
+
+Each element is an array with the following keys. Some keys are available only
+for specific element types.
+
+========== ================================== ==============================================
+Key        Types                              Description
+========== ================================== ==============================================
+``type``   *any*                              The type of the element, see `Element types`_
+``start``  *any*                              Byte offset at which the element begins
+``end``    *any*                              Byte offset at which the element ends
+``name``   ``SimpleHtmlParser::OPENING_TAG``, Tag name (e.g. ``div``),
+                                              see `Tag name and attribute normalization`_
+           ``SimpleHtmlParser::CLOSING_TAG``
+``attrs``  ``SimpleHtmlParser::OPENING_TAG``  Array with the opening tag's attributes,
+                                              see `Tag name and attribute normalization`_
+``symbol`` ``SimpleHtmlParser::OTHER``        ``!``, ``?`` or ``/``
+========== ================================== ==============================================
+
+
 Element types
-=============
+-------------
 
 - ``SimpleHtmlParser::COMMENT`` - a comment, e.g. ``<!-- foo -->``
 - ``SimpleHtmlParser::OPENING_TAG`` - an opening tag, e.g. ``<span class="bar">``

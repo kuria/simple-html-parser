@@ -2,10 +2,10 @@
 
 namespace Kuria\SimpleHtmlParser;
 
+use Kuria\DevMeta\Test;
 use PHPUnit\Framework\AssertionFailedError;
-use PHPUnit\Framework\TestCase;
 
-class SimpleHtmlParserTest extends TestCase
+class SimpleHtmlParserTest extends Test
 {
     function testShouldGetLengthAndHtml()
     {
@@ -15,161 +15,204 @@ class SimpleHtmlParserTest extends TestCase
         $this->assertSame('abc', $parser->getHtml());
     }
 
-    function testShouldMatchComment()
+    /**
+     * @dataProvider provideMatchCases
+     */
+    function testShouldMatch(string $html, array $expectedKeys)
     {
-        $this->matchAndAssert('<!-- foo bar -->', [
-            'type' => SimpleHtmlParser::COMMENT,
-            'start' => 0,
-            'end' => 16,
-        ]);
+        $parser = new SimpleHtmlParser($html);
+
+        $this->assertElement($parser->current(), $expectedKeys);
     }
 
-    function testShouldMatchOpeningTag()
+    function provideMatchCases(): array
     {
-        $this->matchAndAssert('<P>', [
-            'type' => SimpleHtmlParser::OPENING_TAG,
-            'start' => 0,
-            'end' => 3,
-            'name' => 'p',
-            'attrs' => [],
-        ]);
+        return [
+            // html, expectedKeys
+            'comment' => [
+                '<!-- foo bar -->',
+                [
+                    'type' => SimpleHtmlParser::COMMENT,
+                    'start' => 0,
+                    'end' => 16,
+                ],
+            ],
+
+            'opening tag' => [
+                '<P>',
+                [
+                    'type' => SimpleHtmlParser::OPENING_TAG,
+                    'start' => 0,
+                    'end' => 3,
+                    'name' => 'p',
+                    'attrs' => [],
+                ],
+            ],
+
+            'opening tag with special chars' => [
+                '<Foo:barž>',
+                [
+                    'type' => SimpleHtmlParser::OPENING_TAG,
+                    'start' => 0,
+                    'end' => 11,
+                    'name' => 'Foo:barž',
+                    'attrs' => [],
+                ],
+            ],
+
+            'opening tag with attrs' => [
+                '<A HREF="http://example.com?FOO" id="foo"  class=link >',
+                [
+                    'type' => SimpleHtmlParser::OPENING_TAG,
+                    'start' => 0,
+                    'end' => 55,
+                    'name' => 'a',
+                    'attrs' => ['href' => 'http://example.com?FOO', 'id' => 'foo', 'class' => 'link'],
+                ],
+            ],
+
+            'self-closing tag' => [
+                '<hr />',
+                [
+                    'type' => SimpleHtmlParser::OPENING_TAG,
+                    'start' => 0,
+                    'end' => 6,
+                    'name' => 'hr',
+                    'attrs' => [],
+                ],
+            ],
+
+            'self-closing tag with attrs' => [
+                '<hr data-lorem="ipsum" />',
+                [
+                    'type' => SimpleHtmlParser::OPENING_TAG,
+                    'start' => 0,
+                    'end' => 25,
+                    'name' => 'hr',
+                    'attrs' => ['data-lorem' => 'ipsum'],
+                ],
+            ],
+
+            'unterminated opening tag' => [
+                '<a href="http://example.com/"',
+                [
+                    'type' => SimpleHtmlParser::OPENING_TAG,
+                    'start' => 0,
+                    'end' => 29,
+                    'name' => 'a',
+                    'attrs' => ['href' => 'http://example.com/'],
+                ],
+            ],
+
+            'unterminated opening tag followed by another element' => [
+                '<a href="http://example.com/"<br id="foo">',
+                [
+                    'type' => SimpleHtmlParser::OPENING_TAG,
+                    'start' => 0,
+                    'end' => 42,
+                    'name' => 'a',
+                    'attrs' => ['href' => 'http://example.com/', '<br' => true, 'id' => 'foo'],
+                ],
+            ],
+
+            'closing tag' => [
+                '</A>',
+                [
+                    'type' => SimpleHtmlParser::CLOSING_TAG,
+                    'start' => 0,
+                    'end' => 4,
+                    'name' => 'a',
+                ],
+            ],
+
+            'closing tag with special chars' => [
+                '</Foo-barž>',
+                [
+                    'type' => SimpleHtmlParser::CLOSING_TAG,
+                    'start' => 0,
+                    'end' => 12,
+                    'name' => 'Foo-barž',
+                ],
+            ],
+
+            'closing tag with attrs' => [
+                '</A id="nonsense">',
+                [
+                    'type' => SimpleHtmlParser::CLOSING_TAG,
+                    'start' => 0,
+                    'end' => 18,
+                    'name' => 'a',
+                ],
+            ],
+
+            'doctype' => [
+                '<!doctype html>',
+                [
+                    'type' => SimpleHtmlParser::OTHER,
+                    'start' => 0,
+                    'end' => 15,
+                    'symbol' => '!',
+                ],
+            ],
+
+            'xml header' => [
+                '<?xml version="1.0" ?>',
+                [
+                    'type' => SimpleHtmlParser::OTHER,
+                    'start' => 0,
+                    'end' => 22,
+                    'symbol' => '?',
+                ],
+            ],
+
+            'invalid closing tag' => [
+                '</ div>',
+                [
+                    'type' => SimpleHtmlParser::OTHER,
+                    'start' => 0,
+                    'end' => 7,
+                    'symbol' => '/',
+                ],
+            ],
+
+            'invalid 1' => [
+                '<?',
+                [
+                    'type' => SimpleHtmlParser::INVALID,
+                    'start' => 0,
+                    'end' => 2,
+                ],
+            ],
+
+            'invalid 2' => [
+                '<!',
+                [
+                    'type' => SimpleHtmlParser::INVALID,
+                    'start' => 0,
+                    'end' => 2,
+                ],
+            ],
+        ];
     }
 
-    function testShouldMatchOpeningTagWithSpecialCharacters()
+    /**
+     * @dataProvider provideNonMatchingCases
+     */
+    function testShouldFailToMatch(string $html)
     {
-        $html = '<Foo:barž>';
+        $parser = new SimpleHtmlParser($html);
 
-        $this->matchAndAssert($html, [
-            'type' => SimpleHtmlParser::OPENING_TAG,
-            'start' => 0,
-            'end' => strlen($html),
-            'name' => 'Foo:barž',
-            'attrs' => [],
-        ]);
+        $this->assertNull($parser->current());
     }
 
-    function testShouldMatchOpeningTagWithAttributes()
+    function provideNonMatchingCases(): array
     {
-        $this->matchAndAssert('<A HREF="http://example.com?FOO" id="foo"  class=link >', [
-            'type' => SimpleHtmlParser::OPENING_TAG,
-            'start' => 0,
-            'end' => 55,
-            'name' => 'a',
-            'attrs' => ['href' => 'http://example.com?FOO', 'id' => 'foo', 'class' => 'link'],
-        ]);
-    }
-
-    function testShouldMatchSelfClosingTag()
-    {
-        $this->matchAndAssert('<hr />', [
-            'type' => SimpleHtmlParser::OPENING_TAG,
-            'start' => 0,
-            'end' => 6,
-            'name' => 'hr',
-            'attrs' => [],
-        ]);
-    }
-
-    function testShouldMatchSelfClosingTagWithAttributes()
-    {
-        $this->matchAndAssert('<hr data-lorem="ipsum" />', [
-            'type' => SimpleHtmlParser::OPENING_TAG,
-            'start' => 0,
-            'end' => 25,
-            'name' => 'hr',
-            'attrs' => ['data-lorem' => 'ipsum'],
-        ]);
-    }
-
-    function testShouldMatchUnterminatedOpeningTag()
-    {
-        $this->matchAndAssert('<a href="http://example.com/"', [
-            'type' => SimpleHtmlParser::OPENING_TAG,
-            'start' => 0,
-            'end' => 29,
-            'name' => 'a',
-            'attrs' => ['href' => 'http://example.com/'],
-        ]);
-    }
-
-    function testShouldMatchUnterminatedOpeningTagFollowedByAnotherElement()
-    {
-        $this->matchAndAssert('<a href="http://example.com/"<br id="foo">', [
-            'type' => SimpleHtmlParser::OPENING_TAG,
-            'start' => 0,
-            'end' => 42,
-            'name' => 'a',
-            'attrs' => ['href' => 'http://example.com/', 'id' => 'foo', '<br' => true],
-        ]);
-    }
-
-    function testShouldMatchClosingTag()
-    {
-        $this->matchAndAssert('</A>', [
-            'type' => SimpleHtmlParser::CLOSING_TAG,
-            'start' => 0,
-            'end' => 4,
-            'name' => 'a',
-        ]);
-    }
-
-    function testShouldMatchClosingTagWithSpecialCharacters()
-    {
-        $html = '</Foo-barž>';
-
-        $this->matchAndAssert($html, [
-            'type' => SimpleHtmlParser::CLOSING_TAG,
-            'start' => 0,
-            'end' => strlen($html),
-            'name' => 'Foo-barž',
-        ]);
-    }
-
-    function testShouldMatchClosingTagWithAttributes()
-    {
-        $this->matchAndAssert('</A id="nonsense">', [
-            'type' => SimpleHtmlParser::CLOSING_TAG,
-            'start' => 0,
-            'end' => 18,
-            'name' => 'a',
-        ]);
-    }
-
-    function testShouldMatchOther()
-    {
-        $this->matchAndAssert('<!doctype html>', [
-            'type' => SimpleHtmlParser::OTHER,
-            'start' => 0,
-            'end' => 15,
-            'symbol' => '!',
-        ]);
-
-        $this->matchAndAssert('<?= echo "Hi"; ?>', [
-            'type' => SimpleHtmlParser::OTHER,
-            'start' => 0,
-            'end' => 17,
-            'symbol' => '?',
-        ]);
-    }
-
-    function testShouldMatchInvalid()
-    {
-        $this->matchAndAssertFailure('<');
-        $this->matchAndAssertFailure('< foo');
-        $this->matchAndAssertFailure('<+bar');
-        $this->matchAndAssertFailure('<#');
-
-        $this->matchAndAssert('<?', [
-            'type' => SimpleHtmlParser::INVALID,
-            'start' => 0,
-            'end' => 2,
-        ]);
-
-        $this->matchAndAssert('<!', [
-            'type' => SimpleHtmlParser::INVALID,
-            'start' => 0,
-            'end' => 2,
-        ]);
+        return [
+            ['<'],
+            ['< foo'],
+            ['<+bar'],
+            ['<#'],
+        ];
     }
 
     function testShouldFind()
@@ -701,20 +744,6 @@ HTML;
         $this->assertFalse($parser->usesFallbackEncoding());
     }
 
-    private function matchAndAssert(string $html, array $expectedKeys): void
-    {
-        $parser = new SimpleHtmlParser($html);
-
-        $this->assertElement($parser->current(), $expectedKeys);
-    }
-
-    private function matchAndAssertFailure(string $html): void
-    {
-        $parser = new SimpleHtmlParser($html);
-
-        $this->assertNull($parser->current());
-    }
-
     private function assertElement($element, array $expectedKeys = []): void
     {
         $this->assertInternalType('array', $element);
@@ -758,7 +787,7 @@ HTML;
         // check expected keys
         foreach ($expectedKeys as $expectedKey => $expectedValue) {
             $this->assertArrayHasKey($expectedKey, $element);
-            $this->assertEquals($expectedValue, $element[$expectedKey]);
+            $this->assertSame($expectedValue, $element[$expectedKey]);
         }
     }
 }
