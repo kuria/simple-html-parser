@@ -25,7 +25,7 @@ class SimpleHtmlParserTest extends Test
         $this->assertElement($parser->current(), $expectedKeys);
     }
 
-    function provideMatchCases(): array
+    function provideMatchCases()
     {
         return [
             // html, expectedKeys
@@ -205,7 +205,7 @@ class SimpleHtmlParserTest extends Test
         $this->assertNull($parser->current());
     }
 
-    function provideNonMatchingCases(): array
+    function provideNonMatchingCases()
     {
         return [
             ['<'],
