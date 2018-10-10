@@ -206,7 +206,7 @@ class SimpleHtmlParser implements \Iterator
      */
     function find(int $elemType, ?string $tagName = null, ?int $stopOffset = null): ?array
     {
-        if ($tagName !== null && static::OPENING_TAG !== $elemType && static::CLOSING_TAG !== $elemType) {
+        if ($tagName !== null && $elemType !== static::OPENING_TAG && $elemType !== static::CLOSING_TAG) {
             throw new \LogicException('Can only specify tag name when searching for OPENING_TAG or CLOSING_TAG');
         }
 
